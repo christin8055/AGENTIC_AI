@@ -73,3 +73,29 @@ def generate_sample_users(
         users.append(user)
 
         return {"users": users, "count": len(users)}
+    
+TOOLS = [write_json, read_json, generate_sample_users]
+
+model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+system_message = (
+    "You are a DataGen, a helpful assistant that generates sample data for applications."
+    "To Generate users, you neeed: first_names (list), last_names (list), domaine (list), min_age max_age."
+    "When asked to save users, first generate them with the tool, then immediately user write_json with the result."
+    "if the user refers to 'those users'  from a previous request, ask them to specify the details again."
+)
+
+agent = create_react_agent(model, TOOLS, prompt=system_message)
+
+def run_agent(user_input: str, history: List[BaseMessage]) -> AIMessage:
+    try:
+        result = agent.invoke(
+            {"messages": history + [HumanMessage(content=user_input)]},
+            config={"recursion_limit": 50}
+        )
+        return result["messages"][-1]
+    except Exception as e:
+        return AIMessage(content = f"Error: {str(e)}\n\nPlease try rephrasing your request or provide more specific details.")
+    
+
+    
