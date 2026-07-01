@@ -13,6 +13,12 @@ load_dotenv()
 
 @tool
 def write_json(filepath: str, data: dict) -> str:
+    """Writes a dictionary object into a JSON file at the specified filepath.
+    
+    Args:
+        filepath: The path where the JSON file should be saved.
+        data: The dictionary data to write into the file.
+    """
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
@@ -22,6 +28,11 @@ def write_json(filepath: str, data: dict) -> str:
 
 @tool
 def read_json(filepath: str) -> str:
+    """Reads and returns the contents of a JSON file as a string.
+    
+    Args:
+        filepath: The path to the JSON file to be read.
+    """
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -41,6 +52,15 @@ def generate_sample_users(
     min_age: List[str],
     max_age: List[str]
 ) -> str:
+    """Generates a random list of sample user profiles in JSON string format based on provided names, domains, and age ranges.
+    
+    Args:
+        first_names: A list of possible first names to sample from.
+        last_names: A list of possible last names to sample from.
+        domains: A list of email domains (e.g., ['gmail.com', 'yahoo.com']).
+        min_age: The minimum age for a generated user.
+        max_age: The maximum age for a generated user.
+    """
     if not first_names:
         return {"error": "first_names list cannot be empty"}
     if not last_names:
@@ -91,11 +111,35 @@ def run_agent(user_input: str, history: List[BaseMessage]) -> AIMessage:
     try:
         result = agent.invoke(
             {"messages": history + [HumanMessage(content=user_input)]},
-            config={"recursion_limit": 50}
+            config={"recursion_limit": 500}
         )
         return result["messages"][-1]
     except Exception as e:
         return AIMessage(content = f"Error: {str(e)}\n\nPlease try rephrasing your request or provide more specific details.")
     
 
-    
+if __name__ == "__main__":
+    print("="*60)
+    print("Generate user data and save them into json files.")
+    print("="*60)
+    print("Examples:")
+    print("     - Generate users with the names John, Jane, Mike and save to users.json")
+    print("     - Create users with the last names Smith, Jones.")
+    print("     - Make users ages 25-35 with company.com emails.\n\n")
+    print("Command: 'quit' or 'exit' to end")
+    print("="*60)
+
+    history: List[BaseMessage] = []
+
+    while True:
+        user_input = input("You: ").strip()
+
+        if user_input.lower() in ['quit','end','q',""]:
+            print("Goodbye!")
+            break
+        print("Agent: ",end="",flush=True)
+        response = run_agent(user_input, history)
+        print(response.content)
+        print()
+
+        history+= [HumanMessage(content=user_input), response]
